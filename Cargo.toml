@@ -1,0 +1,18 @@
+[package]
+name = "fpn"
+version = "0.1.0"
+authors = ["devfans <stefanliu@outlook.com>"]
+edition = "2018"
+description = "Fixed point number"
+exclude = ["examples/*"]
+keywords = ["math", "number", "fixed", "algebra"]
+categories = ["mathematics"]
+repository = "https://github.com/devfans/fpn"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+cast = "*"
+typenum = "*"
+
+
