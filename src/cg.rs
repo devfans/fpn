@@ -102,6 +102,21 @@ pub trait Polar<T> {
     fn polar(&self) -> Self;
 }
 
+macro_rules! polar2 {
+    ($a: ident) => {
+        //TODO:
+        $a.clone()
+    }
+}
+
+macro_rules! polar3 {
+    ($a: ident) => {
+        //TODO:
+        $a.clone()
+    }
+}
+
+
 macro_rules! impl_cg2_ops {
     ($($ty: ty),+) => {
         $(
@@ -113,7 +128,7 @@ macro_rules! impl_cg2_ops {
 
             impl Polar<Vector2<$ty>> for Vector2<$ty> {
                 fn polar(&self) -> Self {
-                    self.clone()
+                    polar2!(self)
                 }
             }
 
@@ -308,6 +323,12 @@ macro_rules! impl_cg3_ops {
             impl Dot<$ty> for Vector3<$ty> {
                 fn dot(&self, v: Self) -> $ty {
                     self.x * v.x + self.y * v.y + self.z * v.z
+                }
+            }
+
+            impl Polar<$ty> for Vector3<$ty> {
+                fn polar(&self) -> Self {
+                    polar3!(self)
                 }
             }
 
@@ -554,7 +575,7 @@ macro_rules! impl_cg2_ops_fpn_ext {
 
             impl<F> Polar<FPN<$ty, F>> for FVector2<$ty, F> where F: Unsigned {
                 fn polar(&self) -> Self {
-                    self.clone()
+                    polar2!(self)
                 }
             }
 
@@ -871,6 +892,12 @@ macro_rules! impl_cg3_ops_fpn_ext {
             impl<F> Dot<FPN<$ty, F>> for FVector3<$ty, F> where F: Unsigned {
                 fn dot(&self, v: Self) -> FPN<$ty, F> {
                     self.x * v.x + self.y * v.y + self.z * v.z
+                }
+            }
+
+            impl<F> Polar<FVector3<$ty, F>> for FVector3<$ty, F> where F: Unsigned {
+                fn polar(&self) -> Self {
+                    polar3!(self)
                 }
             }
 
