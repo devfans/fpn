@@ -154,7 +154,7 @@ pub trait Cross<T> {
 /// compute.
 ///
 /// If T is FPN, then T will be converted to `F64` using trait `To`. The computation is using
-/// binary search against a prepared angle array(from `0` to `0.25pi`), with time complexity `log(K)` where
+/// binary search against a prepared angle array(from `0` to `0.25pi`), with time complexity `O(log(K))` where
 /// `K` mean the array length which is fixed as `65` currently. The result difference for radius
 /// distance is about `radius * 0.25pi/65` which is about `0.012 * radius`, for angle the
 /// difference is about `0.012` plus the `eps()` of the specific `FPN`
