@@ -29,6 +29,10 @@ pub struct FPN<I, F> {
     _m: PhantomData<F>,
 }
 
+/// `To` trait provide the way convert from `FPN<I1, F1>` to `FPN<I2, F2>`;
+pub trait To<T> {
+    fn to(&self) -> T;
+}
 
 impl<I, F> Clone for FPN<I, F> where I: Clone {
     fn clone(&self) -> Self { Self { b: self.b.clone(), _m: PhantomData } }
@@ -53,10 +57,48 @@ impl<I, F> cmp::Eq for FPN<I, F> where I: cmp::Eq { }
 /// Convert and Parse
 /// Ops
 
+macro_rules! pi {
+    ($v:expr, $F: ident, $ty: ty, $Self: ident) => {
+        {
+            let s = $F::to_u8();
+            let b = if s < 56 {
+                $v >> 56 - s
+            } else {
+                $v << s - 56
+            };
+            $Self {
+                b: b as $ty,
+                _m: PhantomData
+            }
+        }
+    }
+}
+
 macro_rules! impl_ops {
     ($($ty: ty),+) => {
         $(
             impl<F> FPN<$ty, F> where F: Unsigned {
+                pub fn pi() -> Self {
+                    pi!(PIS56, F, $ty, Self)
+                }
+
+                pub fn pi_square() -> Self {
+                    pi!(PIS56_SQUARE, F, $ty, Self)
+                }
+
+                pub fn pi_double() -> Self {
+                    pi!(PIS56_DOUBLE, F, $ty, Self)
+                }
+
+                pub fn pi_half() -> Self {
+                    pi!(PIS56_HALF, F, $ty, Self)
+                }
+
+                pub fn pi_quad() -> Self {
+                    pi!(PIS56_QUAD, F, $ty, Self)
+                }
+
+                /// Load raw value without shifting
                 pub fn load(v: $ty) -> Self {
                     Self {
                         b: v,
@@ -64,22 +106,27 @@ macro_rules! impl_ops {
                     }
                 }
 
+                /// `Add` values to the raw storage whith shifting
                 pub fn add_raw(&mut self, v: $ty) {
                     self.b += v
                 }
 
+                /// `Mul` values to the raw storage whith shifting
                 pub fn mul_raw(&mut self, v: $ty) {
                     self.b = (self.b * v) >> F::to_u8();
                 }
 
+                /// `Sub` values to the raw storage whith shifting
                 pub fn sub_raw(&mut self, v: $ty) {
                     self.b -= v
                 }
 
+                /// `Div` values to the raw storage whith shifting
                 pub fn div_raw(&mut self, v: $ty) {
                     self.b = (((self.b as i64) << F::to_i8()) / v as i64) as $ty
                 }
 
+                /// Convert to `T`, which will remove the fraction part.
                 pub fn int(&self) -> $ty {
                     self.b >> F::to_u8()
                 }
@@ -100,7 +147,7 @@ macro_rules! impl_ops {
                     self.b == v
                 }
 
-                pub fn squred(self) -> Self {
+                pub fn squared(self) -> Self {
                     self * self
                 }
 
@@ -139,6 +186,7 @@ macro_rules! impl_ops {
                     (i.signum() * (((1 << shift) - 1) | i)) as f32 / (1u32 << F::to_u8()) as f32
                 }
 
+                /// Create new FPN from a float value
                 pub fn new<T: Into<f64>>(v: T) -> Self {
                     Self {
                         b: (v.into() as f64 * ((1u32 << F::to_u8()) as f64)) as $ty,
@@ -146,6 +194,11 @@ macro_rules! impl_ops {
                     }
                 }
 
+                pub fn raw(&self) -> $ty {
+                    self.b
+                }
+
+                /// Convert from `T`
                 pub fn with(v: $ty) -> Self {
                     Self {
                         b: v << F::to_u8(),
@@ -415,6 +468,31 @@ macro_rules! impl_ops {
 }
 
 impl_ops!(i8, i16, i32, i64);
+
+macro_rules! impl_to {
+    ($tf: ty; $($to: ty),+) => {
+        $(
+            impl<FF, FT> To<FPN<$to, FT>> for FPN<$tf, FF> where FF: Unsigned, FT: Unsigned {
+                fn to(&self) -> FPN<$to, FT> {
+                    let f = FF::to_u8();
+                    let t = FT::to_u8();
+                    if f == t {
+                        FPN::<$to, FT>::load(self.b as $to)
+                    } else if f < t {
+                        FPN::<$to, FT>::load((self.b as $to) << (t - f))
+                    } else {
+                        FPN::<$to, FT>::load((self.b >> (f - t)) as $to)
+                    }
+                }
+            }
+        )+
+    }
+}
+impl_to!(i8; i8, i16, i32, i64);
+impl_to!(i16; i8, i16, i32, i64);
+impl_to!(i32; i8, i16, i32, i64);
+impl_to!(i64; i8, i16, i32, i64);
+
 /*
 macro_rules! impl_ops_const {
     ($i: ty, $($f: ty, $n: literal),+) => {
@@ -454,60 +532,62 @@ macro_rules! eq_with_eps {
 
 #[cfg(test)]
 mod tests {
-    use crate::base::FPN;
-    use typenum::U12;
+    use crate::base::{ FPN, To };
+    use typenum::{ U12, U8 };
     type F64 = FPN<i64, U12>;
-    const a: f32 = 3.141592612345f32;
-    const b: f32 = 9.141592612345f32;
+    const A: f32 = 3.141592612345f32;
+    const B: f32 = 9.141592612345f32;
 
     #[test]
     fn test_general() {
         let eps: f32 = F64::eps();
-        let mut i = F64::new(a);
+        let mut i = F64::new(A);
         assert_eq!(i.get_eps(), 1f32 / ((1u32 << 12) as f32));
-        eq!(i, a);
-        eq!(-i, -a);
-        eq!(F64::from_f32(b), b);
-        eq!(i + i, a + a, eps * 2f32);
+        eq!(i, A);
+        eq!(-i, -A);
+        eq!(F64::from_f32(B), B);
+        eq!(i + i, A + A, eps * 2f32);
         {
-            let v = F64::from_f32(-b);
-            eq!(v, -b);
+            let v = F64::from_f32(-B);
+            eq!(v, -B);
             assert!(v.is_negative());
             assert!(!v.is_positive());
-            eq!(v.abs(), b);
+            eq!(v.abs(), B);
             let copy = i;
             i += v;
             assert_ne!(i, copy);
             assert!(i != copy);
         }
+        assert_eq!(To::<FPN<i32, U8>>::to(&F64::new(A)), FPN::<i32, U8>::new(A));
+
     }
 
     #[test]
     fn test_ops() {
         let eps: f32 = F64::eps();
-        eq!(F64::new(a) / F64::from_f32(b), a / b);
-        eq!(F64::new(a) * F64::from_f32(b), a * b, eps * (a + b + 1f32));
-        eq!(F64::new(a) - F64::from_f32(b), a - b);
-        eq!(F64::new(a) + F64::from_f32(b), a + b, eps * 2f32);
+        eq!(F64::new(A) / F64::from_f32(B), A / B);
+        eq!(F64::new(A) * F64::from_f32(B), A * B, eps * (A + B + 1f32));
+        eq!(F64::new(A) - F64::from_f32(B), A - B);
+        eq!(F64::new(A) + F64::from_f32(B), A + B, eps * 2f32);
         {
-            let mut v = F64::new(a);
+            let mut v = F64::new(A);
             let copy = v;
-            let delta = (b * ((1u32 << 12) as f32)) as i64;
+            let delta = (B * ((1u32 << 12) as f32)) as i64;
 
             v.add_raw(delta);
-            eq!(v, a + b, eps * 2f32);
+            eq!(v, A + B, eps * 2f32);
 
             v.sub_raw(delta);
             assert_eq!(v, copy);
 
             v.mul_raw(delta);
-            eq!(v, a * b, eps * (a + b + 1f32));
+            eq!(v, A * B, eps * (A + B + 1f32));
 
             v.div_raw(delta);
             eq!(v, copy.to_f32());
 
-            eq!(copy >> 2, a / 4f32);
-            eq!(copy << 2, a * 4f32, eps * 4f32);
+            eq!(copy >> 2, A / 4f32);
+            eq!(copy << 2, A * 4f32, eps * 4f32);
 
             let mut copy2 = copy;
             let mut copy3 = copy;
@@ -518,3 +598,10 @@ mod tests {
         }
     }
 }
+
+/// PI << 56, (PI ** 2) << 56, (PI * 2) << 56, etc
+const PIS56: i64 = 226375608064910080i64;
+const PIS56_SQUARE: i64 = 711179947248643800i64;
+const PIS56_DOUBLE: i64 = 452751216129820160i64;
+const PIS56_HALF: i64 = 113187804032455040i64;
+const PIS56_QUAD: i64 = 56593902016227520i64;
