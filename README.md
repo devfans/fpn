@@ -12,5 +12,6 @@ Fixed Point Number with Vector2/Vector3 for graphic algebra
 
 ## [Documentation]
 
+Details please check:
 [Documentation]: https://docs.rs/fpn
 

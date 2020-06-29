@@ -8,6 +8,7 @@ exclude = ["examples/*"]
 keywords = ["math", "number", "fixed", "algebra"]
 categories = ["mathematics"]
 repository = "https://github.com/devfans/fpn"
+documentation = "https://docs.rs/fpn"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 
