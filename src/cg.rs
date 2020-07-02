@@ -1,7 +1,7 @@
 //! `cg` module provides basic `Vector2` `Vector3` struct with primitive scalars and also provides
 //! FPN inegrated version. Common `ops` traits are implemented here.
 
-use crate::base::{ FPN, To };
+use crate::base::{ FPN, To, TANS, COSS };
 use crate::common::F64;
 use std::ops::*;
 use core::cmp;
@@ -144,6 +144,22 @@ pub trait Cross<T> {
     fn cross(&self, v: &Self) -> Self;
 }
 
+/// Rotate provide the coordinate conversion by rotation.
+///
+/// For Vector2, it rotates around the origin point in counter-clockwise direction.
+pub trait Rotate2<T> {
+    fn rotate(&self, v: T) -> Vector2<T>;
+}
+
+/// Rotate provide the coordinate conversion by rotation.
+///
+/// For Vector3, it rotates around axises in counter-clockwise direction.
+pub trait Rotate3<T> {
+    fn rotate_x(&self, v: T) -> Vector3<T>;
+    fn rotate_y(&self, v: T) -> Vector3<T>;
+    fn rotate_z(&self, v: T) -> Vector3<T>;
+}
+
 /// Convert from cartesian cooridates to polar/sphere coordinates
 ///
 /// For Vector2 return Vector2 x: distance, y: couterclock angle from X-axix
@@ -166,15 +182,15 @@ pub trait Polar<T> {
 
 
 macro_rules! impl_cg2_ops {
-    ($($ty: ty),+) => {
+    ($($I: ty),+) => {
         $(
-            impl Dot<$ty> for Vector2<$ty> {
-                fn dot(&self, v: &Self) -> $ty {
+            impl Dot<$I> for Vector2<$I> {
+                fn dot(&self, v: &Self) -> $I {
                     self.x * v.x + self.y * v.y
                 }
             }
 
-            impl Cross<$ty> for Vector2<$ty> {
+            impl Cross<$I> for Vector2<$I> {
                 fn cross(&self, v: &Self) -> Self {
                     let x = self.x * v.y - v.x * self.y;
                     Self {
@@ -184,28 +200,39 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Polar<$ty> for Vector2<$ty> {
+            impl Rotate2<$I> for Vector2<$I> {
+                fn rotate(&self, v: $I) -> Self {
+                    let x = self.x as f64;
+                    let y = self.y as f64;
+                    let angle = v as f64;
+                    let i = x * angle.cos() - y * angle.sin();
+                    let j = x * angle.sin() + y * angle.cos();
+                    Self::new(i as $I, j as $I)
+                }
+            }
+
+            impl Polar<$I> for Vector2<$I> {
                 fn polar(&self) -> Self {
                     let x = self.x as f64;
                     let y = self.y as f64;
                     Self {
-                        x: (x * x + y * y).sqrt() as $ty,
-                        y: y.atan2(x) as $ty,
+                        x: (x * x + y * y).sqrt() as $I,
+                        y: y.atan2(x) as $I,
                     }
                 }
 
-                fn distance(&self) -> $ty {
+                fn distance(&self) -> $I {
                     let x = self.x as f64;
                     let y = self.y as f64;
-                    (x * x + y * y).sqrt() as $ty
+                    (x * x + y * y).sqrt() as $I
                 }
 
-                fn distance_square(&self) -> $ty {
+                fn distance_square(&self) -> $I {
                     self.x * self.x + self.y * self.y
                 }
             }
 
-            impl Neg for Vector2<$ty> {
+            impl Neg for Vector2<$I> {
                 type Output = Self;
                 fn neg(self) -> Self::Output {
                     Self::Output {
@@ -215,8 +242,8 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Neg for &Vector2<$ty> {
-                type Output = Vector2<$ty>;
+            impl Neg for &Vector2<$I> {
+                type Output = Vector2<$I>;
                 fn neg(self) -> Self::Output {
                     Self::Output {
                         x: self.x.neg(),
@@ -225,7 +252,7 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Add for Vector2<$ty> {
+            impl Add for Vector2<$I> {
                 type Output = Self;
                 fn add(self, v: Self) -> Self {
                     Self {
@@ -235,9 +262,9 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Add<Vector2<$ty>> for &Vector2<$ty> {
-                type Output = Vector2<$ty>;
-                fn add(self, v: Vector2<$ty>) -> Self::Output {
+            impl Add<Vector2<$I>> for &Vector2<$I> {
+                type Output = Vector2<$I>;
+                fn add(self, v: Vector2<$I>) -> Self::Output {
                     Self::Output {
                         x: self.x + v.x,
                         y: self.y + v.y,
@@ -245,8 +272,8 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Add for &Vector2<$ty> {
-                type Output = Vector2<$ty>;
+            impl Add for &Vector2<$I> {
+                type Output = Vector2<$I>;
                 fn add(self, v: Self) -> Self::Output {
                     Self::Output {
                         x: self.x + v.x,
@@ -255,8 +282,8 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Add<&Vector2<$ty>> for Vector2<$ty> {
-                type Output = Vector2<$ty>;
+            impl Add<&Vector2<$I>> for Vector2<$I> {
+                type Output = Vector2<$I>;
                 fn add(self, v: &Self) -> Self::Output {
                     Self::Output {
                         x: self.x + v.x,
@@ -265,22 +292,22 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl AddAssign for Vector2<$ty> {
+            impl AddAssign for Vector2<$I> {
                 fn add_assign(&mut self, v: Self) {
                     self.x += v.x;
                     self.y += v.y;
                 }
             }
 
-            impl AddAssign<&Vector2<$ty>> for Vector2<$ty> {
+            impl AddAssign<&Vector2<$I>> for Vector2<$I> {
                 fn add_assign(&mut self, v: &Self) {
                     self.x += v.x;
                     self.y += v.y;
                 }
             }
 
-            impl Sub for Vector2<$ty> {
-                type Output = Vector2<$ty>;
+            impl Sub for Vector2<$I> {
+                type Output = Vector2<$I>;
                 fn sub(self, v: Self) -> Self::Output {
                     Self::Output {
                         x: self.x - v.x,
@@ -289,8 +316,8 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Sub for &Vector2<$ty> {
-                type Output = Vector2<$ty>;
+            impl Sub for &Vector2<$I> {
+                type Output = Vector2<$I>;
                 fn sub(self, v: Self) -> Self::Output {
                     Self::Output {
                         x: self.x - v.x,
@@ -299,8 +326,8 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Sub<&Vector2<$ty>> for Vector2<$ty> {
-                type Output = Vector2<$ty>;
+            impl Sub<&Vector2<$I>> for Vector2<$I> {
+                type Output = Vector2<$I>;
                 fn sub(self, v: &Self) -> Self::Output {
                     Self::Output {
                         x: self.x - v.x,
@@ -309,9 +336,9 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Sub<Vector2<$ty>> for &Vector2<$ty> {
-                type Output = Vector2<$ty>;
-                fn sub(self, v: Vector2<$ty>) -> Self::Output {
+            impl Sub<Vector2<$I>> for &Vector2<$I> {
+                type Output = Vector2<$I>;
+                fn sub(self, v: Vector2<$I>) -> Self::Output {
                     Self::Output {
                         x: self.x - v.x,
                         y: self.y - v.y,
@@ -319,23 +346,23 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl SubAssign for Vector2<$ty> {
+            impl SubAssign for Vector2<$I> {
                 fn sub_assign(&mut self, v: Self) {
                     self.x -= v.x;
                     self.y -= v.y;
                 }
             }
 
-            impl SubAssign<&Vector2<$ty>> for Vector2<$ty> {
+            impl SubAssign<&Vector2<$I>> for Vector2<$I> {
                 fn sub_assign(&mut self, v: &Self) {
                     self.x -= v.x;
                     self.y -= v.y;
                 }
             }
 
-            impl Mul<$ty> for Vector2<$ty> {
+            impl Mul<$I> for Vector2<$I> {
                 type Output = Self;
-                fn mul(self, v: $ty) -> Self {
+                fn mul(self, v: $I) -> Self {
                     Self {
                         x: self.x * v,
                         y: self.y * v,
@@ -343,9 +370,9 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Mul<$ty> for &Vector2<$ty> {
-                type Output = Vector2<$ty>;
-                fn mul(self, v: $ty) -> Self::Output {
+            impl Mul<$I> for &Vector2<$I> {
+                type Output = Vector2<$I>;
+                fn mul(self, v: $I) -> Self::Output {
                     Self::Output {
                         x: self.x * v,
                         y: self.y * v,
@@ -353,16 +380,16 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl MulAssign<$ty> for Vector2<$ty> {
-                fn mul_assign(&mut self, v: $ty) {
+            impl MulAssign<$I> for Vector2<$I> {
+                fn mul_assign(&mut self, v: $I) {
                     self.x *= v;
                     self.y *= v;
                 }
             }
 
-            impl Div<$ty> for Vector2<$ty> {
+            impl Div<$I> for Vector2<$I> {
                 type Output = Self;
-                fn div(self, v: $ty) -> Self {
+                fn div(self, v: $I) -> Self {
                     Self {
                         x: self.x / v,
                         y: self.y / v,
@@ -370,9 +397,9 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl Div<$ty> for &Vector2<$ty> {
-                type Output = Vector2<$ty>;
-                fn div(self, v: $ty) -> Self::Output {
+            impl Div<$I> for &Vector2<$I> {
+                type Output = Vector2<$I>;
+                fn div(self, v: $I) -> Self::Output {
                     Self::Output {
                         x: self.x / v,
                         y: self.y / v,
@@ -380,8 +407,8 @@ macro_rules! impl_cg2_ops {
                 }
             }
 
-            impl DivAssign<$ty> for Vector2<$ty> {
-                fn div_assign(&mut self, v: $ty) {
+            impl DivAssign<$I> for Vector2<$I> {
+                fn div_assign(&mut self, v: $I) {
                     self.x /= v;
                     self.y /= v;
                 }
@@ -391,40 +418,40 @@ macro_rules! impl_cg2_ops {
 }
 
 macro_rules! impl_cg3_ops {
-    ($($ty: ty),+) => {
+    ($($I: ty),+) => {
         $(
-            impl Dot<$ty> for Vector3<$ty> {
-                fn dot(&self, v: &Self) -> $ty {
+            impl Dot<$I> for Vector3<$I> {
+                fn dot(&self, v: &Self) -> $I {
                     self.x * v.x + self.y * v.y + self.z * v.z
                 }
             }
 
-            impl Polar<$ty> for Vector3<$ty> {
+            impl Polar<$I> for Vector3<$I> {
                 fn polar(&self) -> Self {
                     let x = self.x as f64;
                     let y = self.y as f64;
                     let z = self.z as f64;
                     let r = (x.powf(2f64) + y.powf(2f64) + z.powf(2f64)).sqrt();
                     Self {
-                        x: r as $ty,
-                        y: y.atan2(x) as $ty,
-                        z: (z/r).acos() as $ty,
+                        x: r as $I,
+                        y: y.atan2(x) as $I,
+                        z: (z/r).acos() as $I,
                     }
                 }
 
-                fn distance(&self) -> $ty {
+                fn distance(&self) -> $I {
                     let x = self.x as f64;
                     let y = self.y as f64;
                     let z = self.z as f64;
-                    (x.powf(2f64) + y.powf(2f64) + z.powf(2f64)).sqrt() as $ty
+                    (x.powf(2f64) + y.powf(2f64) + z.powf(2f64)).sqrt() as $I
                 }
 
-                fn distance_square(&self) -> $ty {
+                fn distance_square(&self) -> $I {
                     self.x * self.x + self.y * self.y + self.z * self.z
                 }
             }
 
-            impl Cross<$ty> for Vector3<$ty> {
+            impl Cross<$I> for Vector3<$I> {
                 fn cross(&self, v: &Self) -> Self {
                     Self {
                         x: self.y * v.z - v.y * self.z,
@@ -434,7 +461,24 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Neg for Vector3<$ty> {
+            impl Rotate3<$I> for Vector3<$I> {
+                fn rotate_y(&self, v: $I) -> Self {
+                    let v2 = Vector2::new(self.x, self.z).rotate(v);
+                    Self::new(v2.x, self.y, v2.y)
+                }
+
+                fn rotate_z(&self, v: $I) -> Self {
+                    let v2 = Vector2::new(self.y, self.x).rotate(v);
+                    Self::new(v2.y, v2.x, self.z)
+                }
+
+                fn rotate_x(&self, v: $I) -> Self {
+                    let v2 = Vector2::new(self.z, self.y).rotate(v);
+                    Self::new(self.x, v2.y, v2.x)
+                }
+            }
+
+            impl Neg for Vector3<$I> {
                 type Output = Self;
                 fn neg(self) -> Self::Output {
                     Self::Output {
@@ -445,8 +489,8 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Neg for &Vector3<$ty> {
-                type Output = Vector3<$ty>;
+            impl Neg for &Vector3<$I> {
+                type Output = Vector3<$I>;
                 fn neg(self) -> Self::Output {
                     Self::Output {
                         x: self.x.neg(),
@@ -456,7 +500,7 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Add for Vector3<$ty> {
+            impl Add for Vector3<$I> {
                 type Output = Self;
                 fn add(self, v: Self) -> Self::Output {
                     Self::Output {
@@ -467,8 +511,8 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Add for &Vector3<$ty> {
-                type Output = Vector3<$ty>;
+            impl Add for &Vector3<$I> {
+                type Output = Vector3<$I>;
                 fn add(self, v: Self) -> Self::Output {
                     Self::Output {
                         x: self.x + v.x,
@@ -478,7 +522,7 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Add<&Vector3<$ty>> for Vector3<$ty> {
+            impl Add<&Vector3<$I>> for Vector3<$I> {
                 type Output = Self;
                 fn add(self, v: &Self) -> Self::Output {
                     Self::Output {
@@ -489,9 +533,9 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Add<Vector3<$ty>> for &Vector3<$ty> {
-                type Output = Vector3<$ty>;
-                fn add(self, v: Vector3<$ty>) -> Self::Output {
+            impl Add<Vector3<$I>> for &Vector3<$I> {
+                type Output = Vector3<$I>;
+                fn add(self, v: Vector3<$I>) -> Self::Output {
                     Self::Output {
                         x: self.x + v.x,
                         y: self.y + v.y,
@@ -500,7 +544,7 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl AddAssign for Vector3<$ty> {
+            impl AddAssign for Vector3<$I> {
                 fn add_assign(&mut self, v: Self) {
                     self.x += v.x;
                     self.y += v.y;
@@ -508,7 +552,7 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl AddAssign<&Vector3<$ty>> for Vector3<$ty> {
+            impl AddAssign<&Vector3<$I>> for Vector3<$I> {
                 fn add_assign(&mut self, v: &Self) {
                     self.x += v.x;
                     self.y += v.y;
@@ -516,7 +560,7 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Sub for Vector3<$ty> {
+            impl Sub for Vector3<$I> {
                 type Output = Self;
                 fn sub(self, v: Self) -> Self::Output {
                     Self::Output {
@@ -527,8 +571,8 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Sub for &Vector3<$ty> {
-                type Output = Vector3<$ty>;
+            impl Sub for &Vector3<$I> {
+                type Output = Vector3<$I>;
                 fn sub(self, v: Self) -> Self::Output {
                     Self::Output {
                         x: self.x - v.x,
@@ -538,9 +582,9 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Sub<Vector3<$ty>> for &Vector3<$ty> {
-                type Output = Vector3<$ty>;
-                fn sub(self, v: Vector3<$ty>) -> Self::Output {
+            impl Sub<Vector3<$I>> for &Vector3<$I> {
+                type Output = Vector3<$I>;
+                fn sub(self, v: Vector3<$I>) -> Self::Output {
                     Self::Output {
                         x: self.x - v.x,
                         y: self.y - v.y,
@@ -549,7 +593,7 @@ macro_rules! impl_cg3_ops {
                 }
             }
  
-            impl Sub<&Vector3<$ty>> for Vector3<$ty> {
+            impl Sub<&Vector3<$I>> for Vector3<$I> {
                 type Output = Self;
                 fn sub(self, v: &Self) -> Self::Output {
                     Self::Output {
@@ -560,7 +604,7 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl SubAssign for Vector3<$ty> {
+            impl SubAssign for Vector3<$I> {
                 fn sub_assign(&mut self, v: Self) {
                     self.x -= v.x;
                     self.y -= v.y;
@@ -568,7 +612,7 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl SubAssign<&Vector3<$ty>> for Vector3<$ty> {
+            impl SubAssign<&Vector3<$I>> for Vector3<$I> {
                 fn sub_assign(&mut self, v: &Self) {
                     self.x -= v.x;
                     self.y -= v.y;
@@ -576,9 +620,9 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Mul<$ty> for Vector3<$ty> {
+            impl Mul<$I> for Vector3<$I> {
                 type Output = Self;
-                fn mul(self, v: $ty) -> Self {
+                fn mul(self, v: $I) -> Self {
                     Self {
                         x: self.x * v,
                         y: self.y * v,
@@ -587,9 +631,9 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Mul<$ty> for &Vector3<$ty> {
-                type Output = Vector3<$ty>;
-                fn mul(self, v: $ty) -> Self::Output {
+            impl Mul<$I> for &Vector3<$I> {
+                type Output = Vector3<$I>;
+                fn mul(self, v: $I) -> Self::Output {
                     Self::Output {
                         x: self.x * v,
                         y: self.y * v,
@@ -598,17 +642,17 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl MulAssign<$ty> for Vector3<$ty> {
-                fn mul_assign(&mut self, v: $ty) {
+            impl MulAssign<$I> for Vector3<$I> {
+                fn mul_assign(&mut self, v: $I) {
                     self.x *= v;
                     self.y *= v;
                     self.z *= v;
                 }
             }
 
-            impl Div<$ty> for Vector3<$ty> {
+            impl Div<$I> for Vector3<$I> {
                 type Output = Self;
-                fn div(self, v: $ty) -> Self {
+                fn div(self, v: $I) -> Self {
                     Self {
                         x: self.x / v,
                         y: self.y / v,
@@ -617,9 +661,9 @@ macro_rules! impl_cg3_ops {
                 }
             }
 
-            impl Div<$ty> for &Vector3<$ty> {
-                type Output = Vector3<$ty>;
-                fn div(self, v: $ty) -> Self::Output {
+            impl Div<$I> for &Vector3<$I> {
+                type Output = Vector3<$I>;
+                fn div(self, v: $I) -> Self::Output {
                     Self::Output {
                         x: self.x / v,
                         y: self.y / v,
@@ -627,8 +671,8 @@ macro_rules! impl_cg3_ops {
                     }
                 }
             }
-            impl DivAssign<$ty> for Vector3<$ty> {
-                fn div_assign(&mut self, v: $ty) {
+            impl DivAssign<$I> for Vector3<$I> {
+                fn div_assign(&mut self, v: $I) {
                     self.x /= v;
                     self.y /= v;
                     self.z /= v;
@@ -643,9 +687,9 @@ impl_cg3_ops!(i8, i16, i32, i64, f32, f64);
 
 /* Probably a bad idea here:
 macro_rules! impl_cg2_ops_fpn {
-    ($t:ty, $($ty: ty),+) => {
+    ($t:ty, $($I: ty),+) => {
         $(
-            impl_cg2_ops!(FPN<$t, $ty>);
+            impl_cg2_ops!(FPN<$t, $I>);
         )+
     }
 }
@@ -661,14 +705,14 @@ pub fn f64_polar(v: &F64Vector2) -> F64Vector2 {
         ($v: expr, $incr: expr, $s: expr, $d: expr) => {
             {
                 let mut l  = 0;
-		let length = POLAR_TANS.len() - 1;
+		let length = COSS.len() - 1;
                 let mut step = length >> 1;
                 let mut i = l + step;
                 let target = $v.abs();
                 let mut d;
                 while step > 0 {
                     d = $incr;
-                    d.mul_raw(POLAR_TANS[i]);
+                    d.mul_raw(TANS[i]);
                     match (d - target).signum() {
                         0 => {
                             break;
@@ -686,7 +730,7 @@ pub fn f64_polar(v: &F64Vector2) -> F64Vector2 {
                     i = l + step;
                 }
                 F64Vector2 {
-                    x: $incr / F64::load(POLAR_COSS[i]),
+                    x: $incr / F64::load(COSS[i]),
                     y: $d + ((F64::pi_quad() * i as i64) / (length as i64)) * $s,
                 }
             }
@@ -755,25 +799,53 @@ pub fn f64_sphere(v: &F64Vector3) -> F64Vector3 {
 }
 
 macro_rules! impl_cg2_ops_fpn_ext {
-    ($($ty: ty),+) => {
+    ($($I: ty),+) => {
         $(
-            impl<F> Dot<FPN<$ty, F>> for FVector2<$ty, F> where F: Unsigned {
-                fn dot(&self, v: &Self) -> FPN<$ty, F> {
+            impl<F> FVector2<$I, F> where F: Unsigned {
+                pub fn with(x: $I, y: $I) -> Self {
+                    Self {
+                        x: FPN::<$I, F>::with(x),
+                        y: FPN::<$I, F>::with(y),
+                    }
+                }
+
+                pub fn set_x(&mut self, v: $I) {
+                    self.x = FPN::<$I, F>::with(v);
+                }
+
+                pub fn set_y(&mut self, v: $I) {
+                    self.y = FPN::<$I, F>::with(v);
+                }
+            }
+
+            impl<F> Dot<FPN<$I, F>> for FVector2<$I, F> where F: Unsigned {
+                fn dot(&self, v: &Self) -> FPN<$I, F> {
                     self.x * v.x + self.y * v.y
                 }
             }
 
-            impl<F> Cross<FPN<$ty, F>> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Cross<FPN<$I, F>> for FVector2<$I, F> where F: Unsigned {
                 fn cross(&self, v: &Self) -> Self {
                     let x = self.x * v.y - v.x * self.y;
                     Self {
                         x,
-                        y: FPN::<$ty, F>::with(x.signum())
+                        y: FPN::<$I, F>::with(x.signum())
                     }
                 }
             }
 
-            impl<F> Polar<FPN<$ty, F>> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Rotate2<FPN<$I, F>> for FVector2<$I, F> where F: Unsigned {
+                fn rotate(&self, v: FPN<$I, F>) -> Self {
+                    let x: F64 = self.x.to();
+                    let y: F64 = self.y.to();
+                    let angle: F64 = v.to();
+                    let i = x * angle.cos() - y * angle.sin();
+                    let j = x * angle.sin() + y * angle.cos();
+                    Self::new(i.to(), j.to())
+                }
+            }
+
+            impl<F> Polar<FPN<$I, F>> for FVector2<$I, F> where F: Unsigned {
                 fn polar(&self) -> Self {
                     let fv = f64_polar(&F64Vector2::new(self.x.to(), self.y.to()));
                     Self {
@@ -782,16 +854,16 @@ macro_rules! impl_cg2_ops_fpn_ext {
                     }
                 }
 
-                fn distance(&self) -> FPN<$ty, F> {
+                fn distance(&self) -> FPN<$I, F> {
                     self.polar().x
                 }
 
-                fn distance_square(&self) -> FPN<$ty, F> {
+                fn distance_square(&self) -> FPN<$I, F> {
                     self.x * self.x + self.y * self.y
                 }
             }
 
-            impl<F> Neg for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Neg for FVector2<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn neg(self) -> Self::Output {
                     Self::Output {
@@ -801,8 +873,8 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Neg for &FVector2<$ty, F> where F: Unsigned {
-                type Output = FVector2<$ty, F>;
+            impl<F> Neg for &FVector2<$I, F> where F: Unsigned {
+                type Output = FVector2<$I, F>;
                 fn neg(self) -> Self::Output {
                     Self::Output {
                         x: self.x.neg(),
@@ -811,7 +883,7 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Add for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Add for FVector2<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn add(self, v: Self) -> Self::Output {
                     Self::Output {
@@ -821,8 +893,8 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Add for &FVector2<$ty, F> where F: Unsigned {
-                type Output = FVector2<$ty, F>;
+            impl<F> Add for &FVector2<$I, F> where F: Unsigned {
+                type Output = FVector2<$I, F>;
                 fn add(self, v: Self) -> Self::Output {
                     Self::Output {
                         x: self.x + v.x,
@@ -831,7 +903,7 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Add<&FVector2<$ty, F>> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Add<&FVector2<$I, F>> for FVector2<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn add(self, v: &Self) -> Self::Output {
                     Self::Output {
@@ -841,9 +913,9 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Add<FVector2<$ty, F>> for &FVector2<$ty, F> where F: Unsigned {
-                type Output = FVector2<$ty, F>;
-                fn add(self, v: FVector2<$ty, F>) -> Self::Output {
+            impl<F> Add<FVector2<$I, F>> for &FVector2<$I, F> where F: Unsigned {
+                type Output = FVector2<$I, F>;
+                fn add(self, v: FVector2<$I, F>) -> Self::Output {
                     Self::Output {
                         x: self.x + v.x,
                         y: self.y + v.y,
@@ -851,21 +923,21 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> AddAssign for FVector2<$ty, F> where F: Unsigned {
+            impl<F> AddAssign for FVector2<$I, F> where F: Unsigned {
                 fn add_assign(&mut self, v: Self) {
                     self.x += v.x;
                     self.y += v.y;
                 }
             }
 
-            impl<F> AddAssign<&FVector2<$ty, F>> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> AddAssign<&FVector2<$I, F>> for FVector2<$I, F> where F: Unsigned {
                 fn add_assign(&mut self, v: &Self) {
                     self.x += v.x;
                     self.y += v.y;
                 }
             }
 
-            impl<F> Sub for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Sub for FVector2<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn sub(self, v: Self) -> Self::Output {
                     Self::Output {
@@ -875,8 +947,8 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Sub for &FVector2<$ty, F> where F: Unsigned {
-                type Output = FVector2<$ty, F>;
+            impl<F> Sub for &FVector2<$I, F> where F: Unsigned {
+                type Output = FVector2<$I, F>;
                 fn sub(self, v: Self) -> Self::Output {
                     Self::Output {
                         x: self.x - v.x,
@@ -885,7 +957,7 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Sub<&Self> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Sub<&Self> for FVector2<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn sub(self, v: &Self) -> Self::Output {
                     Self::Output {
@@ -895,9 +967,9 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Sub<FVector2<$ty, F>> for &FVector2<$ty, F> where F: Unsigned {
-                type Output = FVector2<$ty, F>;
-                fn sub(self, v: FVector2<$ty, F>) -> Self::Output {
+            impl<F> Sub<FVector2<$I, F>> for &FVector2<$I, F> where F: Unsigned {
+                type Output = FVector2<$I, F>;
+                fn sub(self, v: FVector2<$I, F>) -> Self::Output {
                     Self::Output {
                         x: self.x - v.x,
                         y: self.y - v.y,
@@ -905,23 +977,23 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> SubAssign for Vector2<FPN<$ty, F>> where F: Unsigned {
+            impl<F> SubAssign for Vector2<FPN<$I, F>> where F: Unsigned {
                 fn sub_assign(&mut self, v: Self) {
                     self.x -= v.x;
                     self.y -= v.y;
                 }
             }
 
-            impl<F> SubAssign<&Self> for Vector2<FPN<$ty, F>> where F: Unsigned {
+            impl<F> SubAssign<&Self> for Vector2<FPN<$I, F>> where F: Unsigned {
                 fn sub_assign(&mut self, v: &Self) {
                     self.x -= v.x;
                     self.y -= v.y;
                 }
             }
 
-            impl<F> Mul<FPN<$ty, F>> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Mul<FPN<$I, F>> for FVector2<$I, F> where F: Unsigned {
                 type Output = Self;
-                fn mul(self, v: FPN<$ty, F>) -> Self {
+                fn mul(self, v: FPN<$I, F>) -> Self {
                     Self {
                         x: self.x * v,
                         y: self.y * v,
@@ -929,9 +1001,9 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Mul<FPN<$ty, F>> for &FVector2<$ty, F> where F: Unsigned {
-                type Output = FVector2<$ty, F>;
-                fn mul(self, v: FPN<$ty, F>) -> Self::Output {
+            impl<F> Mul<FPN<$I, F>> for &FVector2<$I, F> where F: Unsigned {
+                type Output = FVector2<$I, F>;
+                fn mul(self, v: FPN<$I, F>) -> Self::Output {
                     Self::Output {
                         x: self.x * v,
                         y: self.y * v,
@@ -939,16 +1011,16 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> MulAssign<FPN<$ty, F>> for Vector2<FPN<$ty, F>> where F: Unsigned {
-                fn mul_assign(&mut self, v: FPN<$ty, F>) {
+            impl<F> MulAssign<FPN<$I, F>> for Vector2<FPN<$I, F>> where F: Unsigned {
+                fn mul_assign(&mut self, v: FPN<$I, F>) {
                     self.x *= v;
                     self.y *= v;
                 }
             }
 
-            impl<F> Div<FPN<$ty, F>> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Div<FPN<$I, F>> for FVector2<$I, F> where F: Unsigned {
                 type Output = Self;
-                fn div(self, v: FPN<$ty, F>) -> Self::Output {
+                fn div(self, v: FPN<$I, F>) -> Self::Output {
                     Self::Output {
                         x: self.x / v,
                         y: self.y / v,
@@ -956,9 +1028,9 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Div<FPN<$ty, F>> for &FVector2<$ty, F> where F: Unsigned {
-                type Output = FVector2<$ty, F>;
-                fn div(self, v: FPN<$ty, F>) -> Self::Output {
+            impl<F> Div<FPN<$I, F>> for &FVector2<$I, F> where F: Unsigned {
+                type Output = FVector2<$I, F>;
+                fn div(self, v: FPN<$I, F>) -> Self::Output {
                     Self::Output {
                         x: self.x / v,
                         y: self.y / v,
@@ -966,16 +1038,16 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> DivAssign<FPN<$ty, F>> for Vector2<FPN<$ty, F>> where F: Unsigned {
-                fn div_assign(&mut self, v: FPN<$ty, F>) {
+            impl<F> DivAssign<FPN<$I, F>> for Vector2<FPN<$I, F>> where F: Unsigned {
+                fn div_assign(&mut self, v: FPN<$I, F>) {
                     self.x /= v;
                     self.y /= v;
                 }
             }
  
-            impl<F> Add<Vector2<$ty>> for Vector2<FPN<$ty, F>> where F: Unsigned {
+            impl<F> Add<Vector2<$I>> for Vector2<FPN<$I, F>> where F: Unsigned {
                 type Output = Self;
-                fn add(self, v: Vector2<$ty>) -> Self {
+                fn add(self, v: Vector2<$I>) -> Self {
                     Self {
                         x: self.x + v.x,
                         y: self.y + v.y,
@@ -983,16 +1055,16 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> AddAssign<Vector2<$ty>> for Vector2<FPN<$ty, F>> where F: Unsigned {
-                fn add_assign(&mut self, v: Vector2<$ty>) {
+            impl<F> AddAssign<Vector2<$I>> for Vector2<FPN<$I, F>> where F: Unsigned {
+                fn add_assign(&mut self, v: Vector2<$I>) {
                     self.x += v.x;
                     self.y += v.y;
                 }
             }
 
-            impl<F> Sub<Vector2<$ty>> for Vector2<FPN<$ty, F>> where F: Unsigned {
+            impl<F> Sub<Vector2<$I>> for Vector2<FPN<$I, F>> where F: Unsigned {
                 type Output = Self;
-                fn sub(self, v: Vector2<$ty>) -> Self {
+                fn sub(self, v: Vector2<$I>) -> Self {
                     Self {
                         x: self.x - v.x,
                         y: self.y - v.y,
@@ -1000,16 +1072,16 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> SubAssign<Vector2<$ty>> for Vector2<FPN<$ty, F>> where F: Unsigned {
-                fn sub_assign(&mut self, v: Vector2<$ty>) {
+            impl<F> SubAssign<Vector2<$I>> for Vector2<FPN<$I, F>> where F: Unsigned {
+                fn sub_assign(&mut self, v: Vector2<$I>) {
                     self.x -= v.x;
                     self.y -= v.y;
                 }
             }
 
-            impl<F> Mul<$ty> for Vector2<FPN<$ty, F>> where F: Unsigned {
+            impl<F> Mul<$I> for Vector2<FPN<$I, F>> where F: Unsigned {
                 type Output = Self;
-                fn mul(self, v: $ty) -> Self {
+                fn mul(self, v: $I) -> Self {
                     Self {
                         x: self.x * v,
                         y: self.y * v,
@@ -1017,16 +1089,16 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> MulAssign<$ty> for Vector2<FPN<$ty, F>> where F: Unsigned {
-                fn mul_assign(&mut self, v: $ty) {
+            impl<F> MulAssign<$I> for Vector2<FPN<$I, F>> where F: Unsigned {
+                fn mul_assign(&mut self, v: $I) {
                     self.x *= v;
                     self.y *= v;
                 }
             }
 
-            impl<F> Div<$ty> for Vector2<FPN<$ty, F>> where F: Unsigned {
+            impl<F> Div<$I> for Vector2<FPN<$I, F>> where F: Unsigned {
                 type Output = Self;
-                fn div(self, v: $ty) -> Self {
+                fn div(self, v: $I) -> Self {
                     Self {
                         x: self.x / v,
                         y: self.y / v,
@@ -1034,14 +1106,14 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> DivAssign<$ty> for Vector2<FPN<$ty, F>> where F: Unsigned {
-                fn div_assign(&mut self, v: $ty) {
+            impl<F> DivAssign<$I> for Vector2<FPN<$I, F>> where F: Unsigned {
+                fn div_assign(&mut self, v: $I) {
                     self.x /= v;
                     self.y /= v;
                 }
             }
 
-            impl<F> Shr<u8> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Shr<u8> for FVector2<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn shr(self, v: u8) -> Self::Output {
                     Self::Output {
@@ -1051,8 +1123,8 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Shr<u8> for &FVector2<$ty, F> where F: Unsigned {
-                type Output = FVector2<$ty, F>;
+            impl<F> Shr<u8> for &FVector2<$I, F> where F: Unsigned {
+                type Output = FVector2<$I, F>;
                 fn shr(self, v: u8) -> Self::Output {
                     Self::Output {
                         x: self.x >> v,
@@ -1061,14 +1133,14 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> ShrAssign<u8> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> ShrAssign<u8> for FVector2<$I, F> where F: Unsigned {
                 fn shr_assign(&mut self, v: u8) {
                     self.x >>= v;
                     self.y >>= v;
                 }
             }
 
-            impl<F> Shl<u8> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> Shl<u8> for FVector2<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn shl(self, v: u8) -> Self::Output {
                     Self::Output {
@@ -1078,8 +1150,8 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> Shl<u8> for &FVector2<$ty, F> where F: Unsigned {
-                type Output = FVector2<$ty, F>;
+            impl<F> Shl<u8> for &FVector2<$I, F> where F: Unsigned {
+                type Output = FVector2<$I, F>;
                 fn shl(self, v: u8) -> Self::Output {
                     Self::Output {
                         x: self.x << v,
@@ -1088,7 +1160,7 @@ macro_rules! impl_cg2_ops_fpn_ext {
                 }
             }
 
-            impl<F> ShlAssign<u8> for FVector2<$ty, F> where F: Unsigned {
+            impl<F> ShlAssign<u8> for FVector2<$I, F> where F: Unsigned {
                 fn shl_assign(&mut self, v: u8) {
                     self.x <<= v;
                     self.y <<= v;
@@ -1099,15 +1171,37 @@ macro_rules! impl_cg2_ops_fpn_ext {
 }
 
 macro_rules! impl_cg3_ops_fpn_ext {
-    ($($ty: ty),+) => {
+    ($($I: ty),+) => {
         $(
-            impl<F> Dot<FPN<$ty, F>> for FVector3<$ty, F> where F: Unsigned {
-                fn dot(&self, v: &Self) -> FPN<$ty, F> {
+            impl<F> FVector3<$I, F> where F: Unsigned {
+                pub fn with(x: $I, y: $I, z: $I) -> Self {
+                    Self {
+                        x: FPN::<$I, F>::with(x),
+                        y: FPN::<$I, F>::with(y),
+                        z: FPN::<$I, F>::with(z),
+                    }
+                }
+
+                pub fn set_x(&mut self, v: $I) {
+                    self.x = FPN::<$I, F>::with(v);
+                }
+
+                pub fn set_y(&mut self, v: $I) {
+                    self.y = FPN::<$I, F>::with(v);
+                }
+
+                pub fn set_z(&mut self, v: $I) {
+                    self.z = FPN::<$I, F>::with(v);
+                }
+            }
+
+            impl<F> Dot<FPN<$I, F>> for FVector3<$I, F> where F: Unsigned {
+                fn dot(&self, v: &Self) -> FPN<$I, F> {
                     self.x * v.x + self.y * v.y + self.z * v.z
                 }
             }
 
-            impl<F> Polar<FPN<$ty, F>> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Polar<FPN<$I, F>> for FVector3<$I, F> where F: Unsigned {
                 fn polar(&self) -> Self {
                     let fv = f64_sphere(&F64Vector3::new(self.x.to(), self.y.to(), self.z.to()));
                     Self {
@@ -1117,16 +1211,16 @@ macro_rules! impl_cg3_ops_fpn_ext {
                     }
                 }
 
-                fn distance(&self) -> FPN<$ty, F> {
+                fn distance(&self) -> FPN<$I, F> {
                     self.polar().x
                 }
 
-                fn distance_square(&self) -> FPN<$ty, F> {
+                fn distance_square(&self) -> FPN<$I, F> {
                     self.x * self.x + self.y * self.y + self.z * self.z
                 }
             }
 
-            impl<F> Cross<FPN<$ty, F>> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Cross<FPN<$I, F>> for FVector3<$I, F> where F: Unsigned {
                 fn cross(&self, v: &Self) -> Self {
                     Self {
                         x: self.y * v.z - v.y * self.z,
@@ -1136,7 +1230,24 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Neg for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Rotate3<FPN<$I, F>> for FVector3<$I, F> where F: Unsigned {
+                fn rotate_y(&self, v: FPN<$I, F>) -> Self {
+                    let v2 = Vector2::new(self.x, self.z).rotate(v);
+                    Self::new(v2.x, self.y, v2.y)
+                }
+
+                fn rotate_z(&self, v: FPN<$I, F>) -> Self {
+                    let v2 = Vector2::new(self.y, self.x).rotate(v);
+                    Self::new(v2.y, v2.x, self.z)
+                }
+
+                fn rotate_x(&self, v: FPN<$I,F>) -> Self {
+                    let v2 = Vector2::new(self.z, self.y).rotate(v);
+                    Self::new(self.x, v2.y, v2.x)
+                }
+            }
+
+            impl<F> Neg for FVector3<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn neg(self) -> Self::Output {
                     Self::Output {
@@ -1147,8 +1258,8 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Neg for &FVector3<$ty, F> where F: Unsigned {
-                type Output = FVector3<$ty, F>;
+            impl<F> Neg for &FVector3<$I, F> where F: Unsigned {
+                type Output = FVector3<$I, F>;
                 fn neg(self) -> Self::Output {
                     Self::Output {
                         x: self.x.neg(),
@@ -1158,7 +1269,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Add for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Add for FVector3<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn add(self, v: Self) -> Self::Output {
                     Self::Output {
@@ -1169,8 +1280,8 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Add for &FVector3<$ty, F> where F: Unsigned {
-                type Output = FVector3<$ty, F>;
+            impl<F> Add for &FVector3<$I, F> where F: Unsigned {
+                type Output = FVector3<$I, F>;
                 fn add(self, v: Self) -> Self::Output {
                     Self::Output {
                         x: self.x + v.x,
@@ -1180,9 +1291,9 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Add<FVector3<$ty, F>> for &FVector3<$ty, F> where F: Unsigned {
-                type Output = FVector3<$ty, F>;
-                fn add(self, v: FVector3<$ty, F>) -> Self::Output {
+            impl<F> Add<FVector3<$I, F>> for &FVector3<$I, F> where F: Unsigned {
+                type Output = FVector3<$I, F>;
+                fn add(self, v: FVector3<$I, F>) -> Self::Output {
                     Self::Output {
                         x: self.x + v.x,
                         y: self.y + v.y,
@@ -1191,7 +1302,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Add<&Self> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Add<&Self> for FVector3<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn add(self, v: &Self) -> Self::Output {
                     Self::Output {
@@ -1202,7 +1313,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> AddAssign for FVector3<$ty, F> where F: Unsigned {
+            impl<F> AddAssign for FVector3<$I, F> where F: Unsigned {
                 fn add_assign(&mut self, v: Self) {
                     self.x += v.x;
                     self.y += v.y;
@@ -1210,7 +1321,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> AddAssign<&Self> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> AddAssign<&Self> for FVector3<$I, F> where F: Unsigned {
                 fn add_assign(&mut self, v: &Self) {
                     self.x += v.x;
                     self.y += v.y;
@@ -1218,7 +1329,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Sub for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Sub for FVector3<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn sub(self, v: Self) -> Self::Output {
                     Self::Output {
@@ -1229,8 +1340,8 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Sub for &FVector3<$ty, F> where F: Unsigned {
-                type Output = FVector3<$ty, F>;
+            impl<F> Sub for &FVector3<$I, F> where F: Unsigned {
+                type Output = FVector3<$I, F>;
                 fn sub(self, v: Self) -> Self::Output {
                     Self::Output {
                         x: self.x - v.x,
@@ -1240,7 +1351,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Sub<&Self> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Sub<&Self> for FVector3<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn sub(self, v: &Self) -> Self::Output {
                     Self::Output {
@@ -1251,9 +1362,9 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Sub<FVector3<$ty, F>> for &FVector3<$ty, F> where F: Unsigned {
-                type Output = FVector3<$ty, F>;
-                fn sub(self, v: FVector3<$ty, F>) -> Self::Output {
+            impl<F> Sub<FVector3<$I, F>> for &FVector3<$I, F> where F: Unsigned {
+                type Output = FVector3<$I, F>;
+                fn sub(self, v: FVector3<$I, F>) -> Self::Output {
                     Self::Output {
                         x: self.x - v.x,
                         y: self.y - v.y,
@@ -1262,7 +1373,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> SubAssign for FVector3<$ty, F> where F: Unsigned {
+            impl<F> SubAssign for FVector3<$I, F> where F: Unsigned {
                 fn sub_assign(&mut self, v: Self) {
                     self.x -= v.x;
                     self.y -= v.y;
@@ -1270,7 +1381,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> SubAssign<&Self> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> SubAssign<&Self> for FVector3<$I, F> where F: Unsigned {
                 fn sub_assign(&mut self, v: &Self) {
                     self.x -= v.x;
                     self.y -= v.y;
@@ -1278,9 +1389,9 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Mul<FPN<$ty, F>> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Mul<FPN<$I, F>> for FVector3<$I, F> where F: Unsigned {
                 type Output = Self;
-                fn mul(self, v: FPN<$ty, F>) -> Self {
+                fn mul(self, v: FPN<$I, F>) -> Self {
                     Self {
                         x: self.x * v,
                         y: self.y * v,
@@ -1289,9 +1400,9 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Mul<FPN<$ty, F>> for &FVector3<$ty, F> where F: Unsigned {
-                type Output = FVector3<$ty,  F>;
-                fn mul(self, v: FPN<$ty, F>) -> Self::Output {
+            impl<F> Mul<FPN<$I, F>> for &FVector3<$I, F> where F: Unsigned {
+                type Output = FVector3<$I,  F>;
+                fn mul(self, v: FPN<$I, F>) -> Self::Output {
                     Self::Output {
                         x: self.x * v,
                         y: self.y * v,
@@ -1300,17 +1411,17 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> MulAssign<FPN<$ty, F>> for FVector3<$ty, F> where F: Unsigned {
-                fn mul_assign(&mut self, v: FPN<$ty, F>) {
+            impl<F> MulAssign<FPN<$I, F>> for FVector3<$I, F> where F: Unsigned {
+                fn mul_assign(&mut self, v: FPN<$I, F>) {
                     self.x *= v;
                     self.y *= v;
                     self.z *= v;
                 }
             }
 
-            impl<F> Div<FPN<$ty, F>> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Div<FPN<$I, F>> for FVector3<$I, F> where F: Unsigned {
                 type Output = Self;
-                fn div(self, v: FPN<$ty, F>) -> Self::Output {
+                fn div(self, v: FPN<$I, F>) -> Self::Output {
                     Self::Output {
                         x: self.x / v,
                         y: self.y / v,
@@ -1319,9 +1430,9 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Div<FPN<$ty, F>> for &FVector3<$ty, F> where F: Unsigned {
-                type Output = FVector3<$ty, F>;
-                fn div(self, v: FPN<$ty, F>) -> Self::Output {
+            impl<F> Div<FPN<$I, F>> for &FVector3<$I, F> where F: Unsigned {
+                type Output = FVector3<$I, F>;
+                fn div(self, v: FPN<$I, F>) -> Self::Output {
                     Self::Output {
                         x: self.x / v,
                         y: self.y / v,
@@ -1330,17 +1441,17 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> DivAssign<FPN<$ty, F>> for Vector3<FPN<$ty, F>> where F: Unsigned {
-                fn div_assign(&mut self, v: FPN<$ty, F>) {
+            impl<F> DivAssign<FPN<$I, F>> for Vector3<FPN<$I, F>> where F: Unsigned {
+                fn div_assign(&mut self, v: FPN<$I, F>) {
                     self.x /= v;
                     self.y /= v;
                     self.z /= v;
                 }
             }
  
-            impl<F> Add<Vector3<$ty>> for Vector3<FPN<$ty, F>> where F: Unsigned {
+            impl<F> Add<Vector3<$I>> for Vector3<FPN<$I, F>> where F: Unsigned {
                 type Output = Self;
-                fn add(self, v: Vector3<$ty>) -> Self {
+                fn add(self, v: Vector3<$I>) -> Self {
                     Self {
                         x: self.x + v.x,
                         y: self.y + v.y,
@@ -1349,17 +1460,17 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> AddAssign<Vector3<$ty>> for Vector3<FPN<$ty, F>> where F: Unsigned {
-                fn add_assign(&mut self, v: Vector3<$ty>) {
+            impl<F> AddAssign<Vector3<$I>> for Vector3<FPN<$I, F>> where F: Unsigned {
+                fn add_assign(&mut self, v: Vector3<$I>) {
                     self.x += v.x;
                     self.y += v.y;
                     self.z += v.z;
                 }
             }
 
-            impl<F> Sub<Vector3<$ty>> for Vector3<FPN<$ty, F>> where F: Unsigned {
+            impl<F> Sub<Vector3<$I>> for Vector3<FPN<$I, F>> where F: Unsigned {
                 type Output = Self;
-                fn sub(self, v: Vector3<$ty>) -> Self {
+                fn sub(self, v: Vector3<$I>) -> Self {
                     Self {
                         x: self.x - v.x,
                         y: self.y - v.y,
@@ -1368,17 +1479,17 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> SubAssign<Vector3<$ty>> for Vector3<FPN<$ty, F>> where F: Unsigned {
-                fn sub_assign(&mut self, v: Vector3<$ty>) {
+            impl<F> SubAssign<Vector3<$I>> for Vector3<FPN<$I, F>> where F: Unsigned {
+                fn sub_assign(&mut self, v: Vector3<$I>) {
                     self.x -= v.x;
                     self.y -= v.y;
                     self.z -= v.z;
                 }
             }
 
-            impl<F> Mul<$ty> for Vector3<FPN<$ty, F>> where F: Unsigned {
+            impl<F> Mul<$I> for Vector3<FPN<$I, F>> where F: Unsigned {
                 type Output = Self;
-                fn mul(self, v: $ty) -> Self {
+                fn mul(self, v: $I) -> Self {
                     Self {
                         x: self.x * v,
                         y: self.y * v,
@@ -1387,17 +1498,17 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> MulAssign<$ty> for Vector3<FPN<$ty, F>> where F: Unsigned {
-                fn mul_assign(&mut self, v: $ty) {
+            impl<F> MulAssign<$I> for Vector3<FPN<$I, F>> where F: Unsigned {
+                fn mul_assign(&mut self, v: $I) {
                     self.x *= v;
                     self.y *= v;
                     self.z *= v;
                 }
             }
 
-            impl<F> Div<$ty> for Vector3<FPN<$ty, F>> where F: Unsigned {
+            impl<F> Div<$I> for Vector3<FPN<$I, F>> where F: Unsigned {
                 type Output = Self;
-                fn div(self, v: $ty) -> Self {
+                fn div(self, v: $I) -> Self {
                     Self {
                         x: self.x / v,
                         y: self.y / v,
@@ -1406,15 +1517,15 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> DivAssign<$ty> for Vector3<FPN<$ty, F>> where F: Unsigned {
-                fn div_assign(&mut self, v: $ty) {
+            impl<F> DivAssign<$I> for Vector3<FPN<$I, F>> where F: Unsigned {
+                fn div_assign(&mut self, v: $I) {
                     self.x /= v;
                     self.y /= v;
                     self.z /= v;
                 }
             }
 
-            impl<F> Shr<u8> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Shr<u8> for FVector3<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn shr(self, v: u8) -> Self::Output {
                     Self::Output {
@@ -1425,8 +1536,8 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Shr<u8> for &FVector3<$ty, F> where F: Unsigned {
-                type Output = FVector3<$ty, F>;
+            impl<F> Shr<u8> for &FVector3<$I, F> where F: Unsigned {
+                type Output = FVector3<$I, F>;
                 fn shr(self, v: u8) -> Self::Output {
                     Self::Output {
                         x: self.x >> v,
@@ -1436,7 +1547,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> ShrAssign<u8> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> ShrAssign<u8> for FVector3<$I, F> where F: Unsigned {
                 fn shr_assign(&mut self, v: u8) {
                     self.x >>= v;
                     self.y >>= v;
@@ -1444,7 +1555,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Shl<u8> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> Shl<u8> for FVector3<$I, F> where F: Unsigned {
                 type Output = Self;
                 fn shl(self, v: u8) -> Self::Output {
                     Self::Output {
@@ -1455,8 +1566,8 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> Shl<u8> for &FVector3<$ty, F> where F: Unsigned {
-                type Output = FVector3<$ty, F>;
+            impl<F> Shl<u8> for &FVector3<$I, F> where F: Unsigned {
+                type Output = FVector3<$I, F>;
                 fn shl(self, v: u8) -> Self::Output {
                     Self::Output {
                         x: self.x << v,
@@ -1466,7 +1577,7 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 }
             }
 
-            impl<F> ShlAssign<u8> for FVector3<$ty, F> where F: Unsigned {
+            impl<F> ShlAssign<u8> for FVector3<$I, F> where F: Unsigned {
                 fn shl_assign(&mut self, v: u8) {
                     self.x <<= v;
                     self.y <<= v;
@@ -1554,141 +1665,4 @@ mod tests {
         fv3_eq!(&fv1 / F64::with(2), &v1 / 2f32);
     }
 }
-
-/// Constants used to convert values from cartesian coordinates to polar coordinates
-/// Constant tan(a) and cos(a) values with a from (PI/4) * 0 / 64 to (PI/4) * 64 / 64
-const POLAR_TANS: [i64; 65] = [
-    0i64,
-    50i64,
-    101i64,
-    151i64,
-    201i64,
-    252i64,
-    302i64,
-    353i64,
-    403i64,
-    454i64,
-    505i64,
-    556i64,
-    608i64,
-    659i64,
-    711i64,
-    763i64,
-    815i64,
-    867i64,
-    920i64,
-    973i64,
-    1026i64,
-    1080i64,
-    1134i64,
-    1188i64,
-    1243i64,
-    1298i64,
-    1353i64,
-    1409i64,
-    1466i64,
-    1523i64,
-    1580i64,
-    1638i64,
-    1697i64,
-    1756i64,
-    1816i64,
-    1876i64,
-    1937i64,
-    1999i64,
-    2062i64,
-    2125i64,
-    2189i64,
-    2254i64,
-    2320i64,
-    2387i64,
-    2455i64,
-    2524i64,
-    2594i64,
-    2665i64,
-    2737i64,
-    2810i64,
-    2885i64,
-    2961i64,
-    3038i64,
-    3116i64,
-    3197i64,
-    3278i64,
-    3362i64,
-    3446i64,
-    3533i64,
-    3622i64,
-    3712i64,
-    3805i64,
-    3900i64,
-    3997i64,
-    4096i64,
-];
-const POLAR_COSS: [i64; 65] = [
-    4096i64,
-    4096i64,
-    4095i64,
-    4093i64,
-    4091i64,
-    4088i64,
-    4085i64,
-    4081i64,
-    4076i64,
-    4071i64,
-    4065i64,
-    4059i64,
-    4052i64,
-    4044i64,
-    4036i64,
-    4027i64,
-    4017i64,
-    4007i64,
-    3996i64,
-    3985i64,
-    3973i64,
-    3961i64,
-    3948i64,
-    3934i64,
-    3920i64,
-    3905i64,
-    3889i64,
-    3873i64,
-    3857i64,
-    3839i64,
-    3822i64,
-    3803i64,
-    3784i64,
-    3765i64,
-    3745i64,
-    3724i64,
-    3703i64,
-    3681i64,
-    3659i64,
-    3636i64,
-    3612i64,
-    3588i64,
-    3564i64,
-    3539i64,
-    3513i64,
-    3487i64,
-    3461i64,
-    3433i64,
-    3406i64,
-    3378i64,
-    3349i64,
-    3320i64,
-    3290i64,
-    3260i64,
-    3229i64,
-    3198i64,
-    3166i64,
-    3134i64,
-    3102i64,
-    3068i64,
-    3035i64,
-    3001i64,
-    2967i64,
-    2932i64,
-    2896i64,
-];
 

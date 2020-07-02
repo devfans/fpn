@@ -7,11 +7,18 @@
 //! bits for fractions. Normal `F64` (`FPN<i64, U12>`) and `F32` (`FPN<i32, U8>`) should be fine
 //! for usages. But be careful about the range overflow which doing `Add`, `Mul` and `Div`
 //!
+//! FPN also provides trigonometric functions including `sin`, `cos` and `tan`.
+//!
 //! `Vector2` and `Vector3` provides the graphic computation containers for 2D and 3D, while
 //! `F64Vector2` (`Vector2<F64>`), `F64Vector3`, `F32Vector2` and `F32Vector3` for fixed numbers.
 //!
 //! `Dot` trait and `Cross` provides the dot product and cross product, while `Polar` trait
 //! provides the function convert a Cartesian Coordinate to a Polar/Spherical Coordinates.
+//! 
+//! `Rotate2` trait and `Rotate3` trait provides the function to rotate `Vector2` around the origin 
+//! point and rotate `Vector3` around the axises.
+//!
+
 
 // #![feature(const_fn)]
 #[macro_use] pub mod base;
@@ -23,6 +30,6 @@ pub use common::{ FPN64, FPN32, F64, F32 };
 
 pub use cg::{
     Vector2, Vector3, FVector2, FVector3, F64Vector2, F64Vector3,
-    Dot, Polar, Cross
+    Dot, Polar, Cross, Rotate2, Rotate3,
 };
 

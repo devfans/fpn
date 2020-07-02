@@ -7,11 +7,12 @@ Fixed Point Number with Vector2/Vector3 for graphic algebra
 [crate-badge]: https://img.shields.io/crates/v/fpn.svg
 [travis-badge]: https://img.shields.io/travis/programble/fpn/master.svg
 [crate]: https://crates.io/crates/fpn
-[travis]: https://travis-ci.org/programble/fpn
+[travis]: https://travis-ci.org/devfans/fpn
 
 
 ## [Documentation]
 
-Details please check:
+Details please check crate documentation:
+
 [Documentation]: https://docs.rs/fpn
 
