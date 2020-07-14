@@ -136,6 +136,21 @@ impl<T> Vector3<T> {
     }
 }
 
+impl<T> Vector2<T> where T: Clone + Copy {
+    pub fn copy(&mut self, v: &Self) {
+        self.x = v.x;
+        self.y = v.y;
+    }
+}
+
+impl<T> Vector3<T> where T: Clone + Copy {
+    pub fn copy(&mut self, v: &Self) {
+        self.x = v.x;
+        self.y = v.y;
+        self.z = v.z;
+    }
+}
+
 pub trait Dot<T> {
     fn dot(&self, v: &Self) -> T;
 }
@@ -148,16 +163,16 @@ pub trait Cross<T> {
 ///
 /// For Vector2, it rotates around the origin point in counter-clockwise direction.
 pub trait Rotate2<T> {
-    fn rotate(&self, v: T) -> Vector2<T>;
+    fn rotate(&mut self, v: T);
 }
 
 /// Rotate provide the coordinate conversion by rotation.
 ///
 /// For Vector3, it rotates around axises in counter-clockwise direction.
 pub trait Rotate3<T> {
-    fn rotate_x(&self, v: T) -> Vector3<T>;
-    fn rotate_y(&self, v: T) -> Vector3<T>;
-    fn rotate_z(&self, v: T) -> Vector3<T>;
+    fn rotate_x(&mut self, v: T);
+    fn rotate_y(&mut self, v: T);
+    fn rotate_z(&mut self, v: T);
 }
 
 /// Convert from cartesian cooridates to polar/sphere coordinates
@@ -178,6 +193,7 @@ pub trait Polar<T> {
     fn polar(&self) -> Self;
     fn distance(&self) -> T;
     fn distance_square(&self) -> T;
+    fn normalize(&mut self);
 }
 
 
@@ -201,13 +217,12 @@ macro_rules! impl_cg2_ops {
             }
 
             impl Rotate2<$I> for Vector2<$I> {
-                fn rotate(&self, v: $I) -> Self {
+                fn rotate(&mut self, v: $I) {
                     let x = self.x as f64;
                     let y = self.y as f64;
                     let angle = v as f64;
-                    let i = x * angle.cos() - y * angle.sin();
-                    let j = x * angle.sin() + y * angle.cos();
-                    Self::new(i as $I, j as $I)
+                    self.x = (x * angle.cos() - y * angle.sin()) as $I;
+                    self.y = (x * angle.sin() + y * angle.cos()) as $I;
                 }
             }
 
@@ -229,6 +244,12 @@ macro_rules! impl_cg2_ops {
 
                 fn distance_square(&self) -> $I {
                     self.x * self.x + self.y * self.y
+                }
+
+                fn normalize(&mut self) {
+                    let alpha = self.distance();
+                    self.x /= alpha;
+                    self.y /= alpha;
                 }
             }
 
@@ -449,6 +470,13 @@ macro_rules! impl_cg3_ops {
                 fn distance_square(&self) -> $I {
                     self.x * self.x + self.y * self.y + self.z * self.z
                 }
+
+                fn normalize(&mut self) {
+                    let alpha = self.distance();
+                    self.x /= alpha;
+                    self.y /= alpha;
+                    self.z /= alpha;
+                }
             }
 
             impl Cross<$I> for Vector3<$I> {
@@ -462,19 +490,25 @@ macro_rules! impl_cg3_ops {
             }
 
             impl Rotate3<$I> for Vector3<$I> {
-                fn rotate_y(&self, v: $I) -> Self {
-                    let v2 = Vector2::new(self.x, self.z).rotate(v);
-                    Self::new(v2.x, self.y, v2.y)
+                fn rotate_x(&mut self, v: $I) {
+                    let mut v2 = Vector2::new(self.y, self.z);
+                    v2.rotate(v);
+                    self.y = v2.x;
+                    self.z = v2.y;
                 }
 
-                fn rotate_z(&self, v: $I) -> Self {
-                    let v2 = Vector2::new(self.y, self.x).rotate(v);
-                    Self::new(v2.y, v2.x, self.z)
+                fn rotate_y(&mut self, v: $I) {
+                    let mut v2 = Vector2::new(self.z, self.x);
+                    v2.rotate(v);
+                    self.x = v2.y;
+                    self.z = v2.x;
                 }
 
-                fn rotate_x(&self, v: $I) -> Self {
-                    let v2 = Vector2::new(self.z, self.y).rotate(v);
-                    Self::new(self.x, v2.y, v2.x)
+                fn rotate_z(&mut self, v: $I) {
+                    let mut v2 = Vector2::new(self.x, self.y);
+                    v2.rotate(v);
+                    self.x = v2.x;
+                    self.y = v2.y;
                 }
             }
 
@@ -835,13 +869,12 @@ macro_rules! impl_cg2_ops_fpn_ext {
             }
 
             impl<F> Rotate2<FPN<$I, F>> for FVector2<$I, F> where F: Unsigned {
-                fn rotate(&self, v: FPN<$I, F>) -> Self {
+                fn rotate(&mut self, v: FPN<$I, F>) {
                     let x: F64 = self.x.to();
                     let y: F64 = self.y.to();
                     let angle: F64 = v.to();
-                    let i = x * angle.cos() - y * angle.sin();
-                    let j = x * angle.sin() + y * angle.cos();
-                    Self::new(i.to(), j.to())
+                    self.x = (x * angle.cos() - y * angle.sin()).to();
+                    self.y = (x * angle.sin() + y * angle.cos()).to();
                 }
             }
 
@@ -860,6 +893,12 @@ macro_rules! impl_cg2_ops_fpn_ext {
 
                 fn distance_square(&self) -> FPN<$I, F> {
                     self.x * self.x + self.y * self.y
+                }
+
+                fn normalize(&mut self) {
+                    let alpha = self.distance();
+                    self.x /= alpha;
+                    self.y /= alpha;
                 }
             }
 
@@ -1218,6 +1257,13 @@ macro_rules! impl_cg3_ops_fpn_ext {
                 fn distance_square(&self) -> FPN<$I, F> {
                     self.x * self.x + self.y * self.y + self.z * self.z
                 }
+
+                fn normalize(&mut self) {
+                    let alpha = self.distance();
+                    self.x /= alpha;
+                    self.y /= alpha;
+                    self.z /= alpha;
+                }
             }
 
             impl<F> Cross<FPN<$I, F>> for FVector3<$I, F> where F: Unsigned {
@@ -1231,19 +1277,25 @@ macro_rules! impl_cg3_ops_fpn_ext {
             }
 
             impl<F> Rotate3<FPN<$I, F>> for FVector3<$I, F> where F: Unsigned {
-                fn rotate_y(&self, v: FPN<$I, F>) -> Self {
-                    let v2 = Vector2::new(self.x, self.z).rotate(v);
-                    Self::new(v2.x, self.y, v2.y)
+                fn rotate_x(&mut self, v: FPN<$I, F>) {
+                    let mut v2 = Vector2::new(self.y, self.z);
+                    v2.rotate(v);
+                    self.y = v2.x;
+                    self.z = v2.y;
                 }
 
-                fn rotate_z(&self, v: FPN<$I, F>) -> Self {
-                    let v2 = Vector2::new(self.y, self.x).rotate(v);
-                    Self::new(v2.y, v2.x, self.z)
+                fn rotate_y(&mut self, v: FPN<$I, F>) {
+                    let mut v2 = Vector2::new(self.z, self.x);
+                    v2.rotate(v);
+                    self.x = v2.y;
+                    self.z = v2.x;
                 }
 
-                fn rotate_x(&self, v: FPN<$I,F>) -> Self {
-                    let v2 = Vector2::new(self.z, self.y).rotate(v);
-                    Self::new(self.x, v2.y, v2.x)
+                fn rotate_z(&mut self, v: FPN<$I,F>) {
+                    let mut v2 = Vector2::new(self.x, self.y);
+                    v2.rotate(v);
+                    self.x = v2.x;
+                    self.y = v2.y;
                 }
             }
 
@@ -1633,6 +1685,18 @@ mod tests {
         fv2_eq!(&fv1 << 1, &v1 * 2f32, eps * 2f32);
         fv2_eq!(&fv1 >> 1, &v1 / 2f32);
         fv2_eq!(&fv1 / F64::with(2), &v1 / 2f32);
+    }
+
+    #[test]
+    fn test_rotate () {
+        let mut v = F64Vector3::new(F64::new(3.23), F64::new(1.1), F64::new(1.2f32));
+        for _ in 0..10000 {
+            v.rotate_y(F64::new(1.1));
+            v.normalize();
+            println!("{} {}", v, v.x * v.x + v.y * v.y + v.z * v.z);
+            eq!(v.x * v.x + v.y * v.y + v.z * v.z, 1f32, 0.05);
+        }
+        // assert!(false);
     }
 
     #[test]
