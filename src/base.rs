@@ -316,7 +316,7 @@ macro_rules! impl_ops {
                 pub fn pow(&self, v: usize) -> Self {
                     let mut p = self.b as i64;
                     let s = F::to_u8();
-                    for _ in 0..v {
+                    for _ in 0..v - 1 {
                         p = (p * p) >> s;
                     }
                     Self {
@@ -328,7 +328,7 @@ macro_rules! impl_ops {
                 pub fn pow_assign(&mut self, v: usize) {
                     let mut p = self.b as i64;
                     let s = F::to_u8();
-                    for _ in 0..v {
+                    for _ in 0..v - 1 {
                         p = (p * p) >> s;
                     }
                     self.b = p as $I;
@@ -668,6 +668,8 @@ mod tests {
         }
         assert_eq!(To::<FPN<i32, U8>>::to(&F64::new(A)), FPN::<i32, U8>::new(A));
 
+        let n = 3993i64;
+        assert_eq!(F64::with(n).pow(2).to_i64(), n.pow(2));
     }
 
     #[test]
