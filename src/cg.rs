@@ -1676,7 +1676,7 @@ mod tests {
 
     #[test]
     fn test_vector2 () {
-        let eps: f32 = F64::eps();
+        let eps: f32 = F64::eps().to_f32();
         let v1 = Vector2::new(X, Y);
         let fv1 = F64Vector2::new(F64::new(X), F64::new(Y));
         fv2_eq!(fv1, v1);
@@ -1704,7 +1704,7 @@ mod tests {
         let v1 = Vector2::new(X, Y).polar();
         let fv1 = F64Vector2::new(F64::new(X), F64::new(Y)).polar();
         eq_with_eps!(fv1.x, v1.x, v1.x * 0.13);
-        eq_with_eps!(fv1.y, v1.y, 0.13 + F64::eps());
+        eq_with_eps!(fv1.y, v1.y, 0.13 + F64::eps().to_f32());
     }
 
     #[test]
@@ -1712,13 +1712,13 @@ mod tests {
         let v1 = Vector3::new(X, Y, Z).polar();
         let fv1 = F64Vector3::new(F64::new(X), F64::new(Y), F64::new(Z)).polar();
         eq_with_eps!(fv1.x, v1.x, v1.z * v1.x * 0.13);
-        eq_with_eps!(fv1.y, v1.y, 0.13 + F64::eps());
-        eq_with_eps!(fv1.z, v1.z, 0.13 + 2f32 * F64::eps());
+        eq_with_eps!(fv1.y, v1.y, 0.13 + F64::eps().to_f32());
+        eq_with_eps!(fv1.z, v1.z, 0.13 + 2f32 * F64::eps().to_f32());
     }
 
     #[test]
     fn test_vector3 () {
-        let eps: f32 = F64::eps();
+        let eps: f32 = F64::eps().to_f32();
         let v1 = Vector3::new(X, Y, Z);
         let fv1 = F64Vector3::new(F64::new(X), F64::new(Y), F64::new(Z));
         fv3_eq!(fv1, v1);

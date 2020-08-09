@@ -234,8 +234,12 @@ macro_rules! impl_ops {
                     Self::load(v)
                 }
 
-                pub fn eps() -> f32 {
-                    1f32 / ((1u32 << F::to_u8()) as f32)
+                pub fn is_eps(self) -> bool {
+                    self.b == 1
+                }
+
+                pub fn eps() -> Self {
+                    Self { b: 1, _m: PhantomData }
                 }
 
                 pub fn get_eps(&self) -> f32 {
@@ -648,7 +652,7 @@ mod tests {
 
     #[test]
     fn test_general() {
-        let eps: f32 = F64::eps();
+        let eps: f32 = F64::eps().to_f32();
         let mut i = F64::new(A);
         assert_eq!(i.get_eps(), 1f32 / ((1u32 << 12) as f32));
         eq!(i, A);
@@ -730,7 +734,7 @@ mod tests {
 
     #[test]
     fn test_ops() {
-        let eps: f32 = F64::eps();
+        let eps: f32 = F64::eps().to_f32();
         eq!(F64::new(A) / F64::from_f32(B), A / B);
         eq!(F64::new(A) * F64::from_f32(B), A * B, eps * (A + B + 1f32));
         eq!(F64::new(A) - F64::from_f32(B), A - B);
