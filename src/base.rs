@@ -12,6 +12,7 @@ type F64 = FPN<i64, U12>;
 pub trait Pri {}
 pub trait PriInt {}
 pub trait PriFloat {}
+pub trait PriSignedInt {}
 
 macro_rules! impl_pri {
     ($trait: ty, $($I: ty),+) => {
@@ -24,6 +25,7 @@ macro_rules! impl_pri {
 impl_pri!(Pri, f32, f64, u8, i8, u16, i16, u32, i32, u64, i64);
 impl_pri!(PriInt, u8, i8, u16, i16, u32, i32, u64, i64);
 impl_pri!(PriFloat, f32, f64);
+impl_pri!(PriSignedInt, i8, i16, i32, i64);
 
 /// I: Interge type as storage, F: number of bits for fractions.
 pub struct FPN<I, F> {
@@ -80,16 +82,37 @@ macro_rules! impl_ops {
     ($($I: ty, $T: ident),+) => {
         $(
             impl<F> FPN<$I, F> where F: Unsigned {
-                pub fn min() -> Self {
+                pub fn get_min() -> Self {
                     Self {
                         b: $T::MIN,
                         _m: PhantomData
                     }
                 }
 
-                pub fn max() -> Self {
+                pub fn get_max() -> Self {
                     Self {
                         b: $T::MAX,
+                        _m: PhantomData
+                    }
+                }
+
+                pub fn min(self, other: Self) -> Self {
+                    Self {
+                        b: self.b.min(other.b),
+                        _m: PhantomData
+                    }
+                }
+
+                pub fn max(self, other: Self) -> Self {
+                    Self {
+                        b: self.b.max(other.b),
+                        _m: PhantomData
+                    }
+                }
+
+                pub fn clamp(self, min: Self, max: Self) -> Self {
+                    Self {
+                        b: self.b.max(min.b).min(max.b),
                         _m: PhantomData
                     }
                 }
@@ -236,6 +259,10 @@ macro_rules! impl_ops {
 
                 pub fn is_eps(self) -> bool {
                     self.b == 1
+                }
+
+                pub fn le_eps(self) -> bool {
+                    self.b < 2
                 }
 
                 pub fn eps() -> Self {

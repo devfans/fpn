@@ -1644,6 +1644,88 @@ macro_rules! impl_cg3_ops_fpn_ext {
 impl_cg2_ops_fpn_ext!(i8, i16, i32, i64);
 impl_cg3_ops_fpn_ext!(i8, i16, i32, i64);
 
+//--------------------Utils borrowed from ncollide
+
+/// Closest points between two lines with a custom tolerance epsilon.
+///
+/// The result, say `res`, is such that the closest points between both lines are
+/// `orig1 + dir1 * res.0` and `orig2 + dir2 * res.1`. If the lines are parallel
+/// then `res.2` is set to `true` and the returned closest points are `orig1` and
+/// its projection on the second line.
+#[macro_export]
+macro_rules! closest_points_line_line_parameters {
+    (
+        $orig1 : expr,
+        $dir1  : expr,
+        $orig2 : expr,
+        $dir2  : expr,
+        $_0    : expr
+    ) => {
+        {
+            // Inspired by RealField-time collision detection by Christer Ericson.
+            let r = $orig1 - $orig2;
+
+            let a = $dir1.distance_square();
+            let e = $dir2.distance_square();
+            let f = $dir2.dot(&r);
+
+            if a.le_eps() && e.le_eps() {
+                ($_0, $_0, false)
+            } else if a.le_eps() {
+                ($_0, f / e, false)
+            } else {
+                let c = $dir1.dot(&r);
+                if e.le_eps() {
+                    (-c / a, $_0, false)
+                } else {
+                    let b = $dir1.dot($dir2);
+                    let ae = a * e;
+                    let bb = b * b;
+                    let denom = ae - bb;
+
+                    // Use absolute and ulps error to test collinearity.
+                    // let parallel = denom <= eps || ulps_eq!(ae, bb);
+                    let parallel = denom.le_eps();
+
+                    let s = if !parallel {
+                        (b * f - c * e) / denom
+                    } else {
+                        $_0
+                    };
+
+                    (s, (b * s + f) / e, parallel)
+                }
+            }
+        }
+    }
+}
+
+/// Closest points between two lines
+#[inline]
+pub fn lines_closest_points<F: Unsigned>(
+    orig1 : &FVector3<i64, F>,
+    dir1  : &FVector3<i64, F>,
+    orig2 : &FVector3<i64, F>,
+    dir2  : &FVector3<i64, F>
+) -> (FVector3<i64, F>, FVector3<i64, F>) {
+    let (s, t, _) = closest_points_line_line_parameters!(orig1, dir1, orig2, dir2, FPN::<i64, F>::zero());
+    (orig1 + dir1 * s, orig2 + dir2 * t)
+}
+
+/// Shortest link between two ended lines
+#[inline]
+pub fn lines_shortest_link<F: Unsigned>(
+    orig1 : &FVector3<i64, F>,
+    dir1  : &FVector3<i64, F>,
+    orig2 : &FVector3<i64, F>,
+    dir2  : &FVector3<i64, F>
+) -> FVector3<i64, F> {
+    let zero = FPN::<i64, F>::zero();
+    let one = FPN::<i64, F>::one();
+    let (s, t, _) = closest_points_line_line_parameters!(orig1, dir1, orig2, dir2, zero);
+    orig1 + dir1 * s.clamp(zero, one) - (orig2 + dir2 * t.clamp(zero, one))
+}
+
 #[macro_export]
 macro_rules! fv2_eq {
     ($a: expr, $b: expr) => {
@@ -1727,6 +1809,26 @@ mod tests {
         fv3_eq!(&fv1 << 1, &v1 * 2f32, eps * 2f32);
         fv3_eq!(&fv1 >> 1, &v1 / 2f32);
         fv3_eq!(&fv1 / F64::with(2), &v1 / 2f32);
+    }
+
+    #[test]
+    fn test_lines_closest_points () {
+        let one = F64::one();
+        let mut orig1 = F64Vector3::with(0, 0, 0);
+        let dir1 = F64Vector3::with(0, 0, 1);
+        let mut orig2 = F64Vector3::with(1, 0, 0);
+        let dir2 = F64Vector3::with(1, -1, 0);
+        let (a, b) = lines_closest_points(&orig1, &dir1, &orig2, &dir2);
+        assert_eq!(a, F64Vector3::with(0, 0, 0));
+        assert_eq!(b, F64Vector3::new(one >> 1, one >> 1, F64::zero()));
+        let c = lines_shortest_link(&orig1, &dir1, &orig2, &dir2);
+        assert_eq!(c, -&orig2);
+        orig1.z += F64::eps() << 3;
+        orig2.z += F64::eps();
+        orig2.x += F64::eps() << 4;
+        let d = lines_shortest_link(&orig1, &dir1, &orig2, &dir2);
+        assert_eq!(d, orig1 - orig2);
+        // println!("{}, {}", a, b);
     }
 }
 
