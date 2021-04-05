@@ -200,6 +200,12 @@ pub trait Polar<T> {
 macro_rules! impl_cg2_ops {
     ($($I: ty),+) => {
         $(
+            impl AsRef<Vector2<$I>> for Vector2<$I> {
+                fn as_ref(&self) -> &Self {
+                    self
+                }
+            }
+
             impl Dot<$I> for Vector2<$I> {
                 fn dot(&self, v: &Self) -> $I {
                     self.x * v.x + self.y * v.y
@@ -441,6 +447,12 @@ macro_rules! impl_cg2_ops {
 macro_rules! impl_cg3_ops {
     ($($I: ty),+) => {
         $(
+            impl AsRef<Vector3<$I>> for Vector3<$I> {
+                fn as_ref(&self) -> &Self {
+                    self
+                }
+            }
+
             impl Dot<$I> for Vector3<$I> {
                 fn dot(&self, v: &Self) -> $I {
                     self.x * v.x + self.y * v.y + self.z * v.z
@@ -835,6 +847,12 @@ pub fn f64_sphere(v: &F64Vector3) -> F64Vector3 {
 macro_rules! impl_cg2_ops_fpn_ext {
     ($($I: ty),+) => {
         $(
+            impl<F> AsRef<FVector2<$I, F>> for FVector2<$I, F> where F: Unsigned {
+                fn as_ref(&self) -> &Self {
+                    self
+                }
+            }
+
             impl<F> FVector2<$I, F> where F: Unsigned {
                 pub fn with(x: $I, y: $I) -> Self {
                     Self {
@@ -1212,6 +1230,12 @@ macro_rules! impl_cg2_ops_fpn_ext {
 macro_rules! impl_cg3_ops_fpn_ext {
     ($($I: ty),+) => {
         $(
+            impl<F> AsRef<FVector3<$I, F>> for FVector3<$I, F> where F: Unsigned {
+                fn as_ref(&self) -> &Self {
+                    self
+                }
+            }
+
             impl<F> FVector3<$I, F> where F: Unsigned {
                 pub fn with(x: $I, y: $I, z: $I) -> Self {
                     Self {
