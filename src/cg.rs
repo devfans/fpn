@@ -196,6 +196,49 @@ pub trait Polar<T> {
     fn normalize(&mut self);
 }
 
+#[macro_export]
+macro_rules! same_sig {
+    ($a: expr, $b: expr) => {
+        $a.x.signum() == $b.x.signum() &&
+        $a.y.signum() == $b.y.signum() &&
+        $a.z.signum() == $b.z.signum()
+    }
+}
+ 
+#[macro_export]
+macro_rules! same_line {
+    ($a: expr, $b: expr) => {
+        $a.dot($b).pow(2) == $a.distance_square() * $b.distance_square()
+    };
+    ($a: expr, $b: expr, $delta: expr) => {
+        {
+            let a = $a.dot($b).pow(2);
+            let b = $a.distance_square() * $b.distance_square();
+            let c = b * $delta;
+            a >= b - c && a<= b + c
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! same_dir {
+    ($a: expr, $b: expr) => {
+        same_sig!($a, $b) && same_line!($a, $b)
+    };
+    ($a: expr, $b: expr, $delta: expr) => {
+        same_sig!($a, $b) && same_line!($a, $b, $delta)
+    }
+}
+
+#[macro_export]
+macro_rules! reverse_dir {
+    ($a: expr, $b: expr) => {
+        !same_sig!($a, $b) && same_line!($a, $b)
+    };
+    ($a: expr, $b: expr, $delta: expr) => {
+        !same_sig!($a, $b) && same_line!($a, $b, $delta)
+    }
+}
 
 macro_rules! impl_cg2_ops {
     ($($I: ty),+) => {
@@ -1853,6 +1896,20 @@ mod tests {
         let d = lines_shortest_link(&orig1, &dir1, &orig2, &dir2);
         assert_eq!(d, orig1 - orig2);
         // println!("{}, {}", a, b);
+    }
+
+    #[test]
+    fn test_same_dir() {
+        let v1 = F64Vector3::with(1, 2, 3);
+        let v2 = F64Vector3::with(2, 4, 6);
+        let v3 = F64Vector3::new(F64::new(0.5), F64::new(1.0), F64::new(1.5));
+        let v4 = F64Vector3::new(F64::new(0.5), F64::new(1.0), F64::new(1.5008));
+        let v5 = F64Vector3::new(F64::new(-0.5), F64::new(-1.0), F64::new(-1.5008));
+        assert!(same_dir!(v1, &v2));
+        assert!(same_dir!(v1, &v3));
+        assert!(same_dir!(v3, &v2));
+        assert!(same_dir!(v1, &v4, F64::new(0.0001)));
+        assert!(reverse_dir!(v1, &v5, F64::new(0.0001)));
     }
 }
 

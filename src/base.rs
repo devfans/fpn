@@ -743,7 +743,7 @@ mod tests {
                     for _ in 0..10000 {
                         let angle: f64 = rng.gen();
                         let a = F64::new(angle * 1000f64);
-                        let i = a.$m().to_f32();
+                        // let i = a.$m().to_f32();
                         let j = a.to_f32().$m();
                         // println!("{} {} {}", i - j, i, j);
                         eq!(a.$m(), j, $d);
