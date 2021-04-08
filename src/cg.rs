@@ -1793,6 +1793,16 @@ pub fn lines_shortest_link<F: Unsigned>(
     orig1 + dir1 * s.clamp(zero, one) - (orig2 + dir2 * t.clamp(zero, one))
 }
 
+#[inline]
+pub fn is_same_dir<F: Unsigned>(
+    dir1: &FVector3<i64, F>,
+    dir2: &FVector3<i64, F>,
+    delta: FPN<i64, F>,
+) -> bool {
+    same_dir!(dir1, dir2, delta)
+}
+ 
+
 #[macro_export]
 macro_rules! fv2_eq {
     ($a: expr, $b: expr) => {

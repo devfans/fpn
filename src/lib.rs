@@ -31,5 +31,6 @@ pub use common::{ FPN64, FPN32, F64, F32 };
 pub use cg::{
     Vector2, Vector3, FVector2, FVector3, F64Vector2, F64Vector3,
     Dot, Polar, Cross, Rotate2, Rotate3,
+    is_same_dir,
 };
 
