@@ -897,6 +897,15 @@ macro_rules! impl_cg2_ops_fpn_ext {
             }
 
             impl<F> FVector2<$I, F> where F: Unsigned {
+                pub fn zero() -> Self {
+                    let zero = FPN::<$I, F>::zero();
+                    Self { x: zero, y: zero }
+                }
+
+                pub fn is_zero(&self) -> bool {
+                    self.x.is_zero() && self.y.is_zero()
+                }
+
                 pub fn with(x: $I, y: $I) -> Self {
                     Self {
                         x: FPN::<$I, F>::with(x),
@@ -1286,6 +1295,15 @@ macro_rules! impl_cg3_ops_fpn_ext {
                         y: FPN::<$I, F>::with(y),
                         z: FPN::<$I, F>::with(z),
                     }
+                }
+
+                pub fn zero() -> Self {
+                    let zero = FPN::<$I, F>::zero();
+                    Self { x: zero, y: zero, z: zero }
+                }
+
+                pub fn is_zero(&self) -> bool {
+                    self.x.is_zero() && self.y.is_zero() && self.z.is_zero()
                 }
 
                 pub fn set_x(&mut self, v: $I) {
