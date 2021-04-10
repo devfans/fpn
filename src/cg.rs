@@ -226,7 +226,17 @@ macro_rules! same_dir {
         same_sig!($a, $b) && same_line!($a, $b)
     };
     ($a: expr, $b: expr, $delta: expr) => {
-        same_sig!($a, $b) && same_line!($a, $b, $delta)
+        {
+            let dot = $a.dot($b);
+            if dot.signum() >= 0 {
+                let a = dot.pow(2);
+                let b = $a.distance_square() * $b.distance_square();
+                let c = b * $delta;
+                a >= b - c && a<= b + c
+            } else {
+                false
+            }
+        }
     }
 }
 
@@ -236,7 +246,17 @@ macro_rules! reverse_dir {
         !same_sig!($a, $b) && same_line!($a, $b)
     };
     ($a: expr, $b: expr, $delta: expr) => {
-        !same_sig!($a, $b) && same_line!($a, $b, $delta)
+        {
+            let dot = $a.dot($b);
+            if dot.signum() <= 0 {
+                let a = dot.pow(2);
+                let b = $a.distance_square() * $b.distance_square();
+                let c = b * $delta;
+                a >= b - c && a<= b + c
+            } else {
+                false
+            }
+        }
     }
 }
 
